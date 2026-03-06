@@ -1,391 +1,461 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SizeAhead - 子供服サイズ先読み</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f5f3ff;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .brand-badge {
+            transition: transform 0.2s;
+        }
+        .brand-badge:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const BRAND_SIZES = {
-  JP: [
-    { label: "80cm", heightMin: 75, heightMax: 85 },
-    { label: "90cm", heightMin: 85, heightMax: 95 },
-    { label: "100cm", heightMin: 95, heightMax: 105 },
-    { label: "110cm", heightMin: 105, heightMax: 115 },
-    { label: "120cm", heightMin: 115, heightMax: 125 },
-    { label: "130cm", heightMin: 125, heightMax: 135 },
-    { label: "140cm", heightMin: 135, heightMax: 145 },
-    { label: "150cm", heightMin: 145, heightMax: 155 },
-  ],
-  GAP: [
-    { label: "12-18M", heightMin: 75, heightMax: 85 },
-    { label: "18-24M", heightMin: 85, heightMax: 92 },
-    { label: "2T", heightMin: 92, heightMax: 98 },
-    { label: "3T", heightMin: 98, heightMax: 104 },
-    { label: "4T", heightMin: 104, heightMax: 110 },
-    { label: "5", heightMin: 110, heightMax: 116 },
-    { label: "6", heightMin: 116, heightMax: 122 },
-    { label: "7", heightMin: 122, heightMax: 128 },
-    { label: "8", heightMin: 128, heightMax: 134 },
-    { label: "10", heightMin: 134, heightMax: 146 },
-    { label: "12", heightMin: 146, heightMax: 158 },
-  ],
-  Zara: [
-    { label: "9-12M", heightMin: 75, heightMax: 82 },
-    { label: "18-24M", heightMin: 82, heightMax: 92 },
-    { label: "2-3Y", heightMin: 92, heightMax: 100 },
-    { label: "3-4Y", heightMin: 100, heightMax: 108 },
-    { label: "4-5Y", heightMin: 108, heightMax: 116 },
-    { label: "6-7Y", heightMin: 116, heightMax: 124 },
-    { label: "8-9Y", heightMin: 124, heightMax: 132 },
-    { label: "10-11Y", heightMin: 132, heightMax: 142 },
-    { label: "12-13Y", heightMin: 142, heightMax: 152 },
-  ],
-  "H&M": [
-    { label: "74-80", heightMin: 74, heightMax: 80 },
-    { label: "86-92", heightMin: 86, heightMax: 92 },
-    { label: "92-98", heightMin: 92, heightMax: 98 },
-    { label: "98-104", heightMin: 98, heightMax: 104 },
-    { label: "104-110", heightMin: 104, heightMax: 110 },
-    { label: "110-116", heightMin: 110, heightMax: 116 },
-    { label: "116-122", heightMin: 116, heightMax: 122 },
-    { label: "122-128", heightMin: 122, heightMax: 128 },
-    { label: "128-134", heightMin: 128, heightMax: 134 },
-    { label: "134-140", heightMin: 134, heightMax: 140 },
-  ],
-  UNIQLO: [
-    { label: "80", heightMin: 75, heightMax: 85 },
-    { label: "90", heightMin: 85, heightMax: 95 },
-    { label: "100", heightMin: 95, heightMax: 105 },
-    { label: "110", heightMin: 105, heightMax: 115 },
-    { label: "120", heightMin: 115, heightMax: 125 },
-    { label: "130", heightMin: 125, heightMax: 135 },
-    { label: "140", heightMin: 135, heightMax: 145 },
-    { label: "150", heightMin: 145, heightMax: 155 },
-  ],
-};
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-function growthPerYear(ageMonths) {
-  if (ageMonths < 12) return 20;
-  if (ageMonths < 24) return 12;
-  if (ageMonths < 36) return 9;
-  if (ageMonths < 60) return 7;
-  if (ageMonths < 96) return 6;
-  return 5.5;
-}
+        const BRAND_SIZES = {
+            JP: [
+                { label: "80cm", heightMin: 75, heightMax: 85 },
+                { label: "90cm", heightMin: 85, heightMax: 95 },
+                { label: "100cm", heightMin: 95, heightMax: 105 },
+                { label: "110cm", heightMin: 105, heightMax: 115 },
+                { label: "120cm", heightMin: 115, heightMax: 125 },
+                { label: "130cm", heightMin: 125, heightMax: 135 },
+                { label: "140cm", heightMin: 135, heightMax: 145 },
+                { label: "150cm", heightMin: 145, heightMax: 155 },
+            ],
+            GAP: [
+                { label: "12-18M", heightMin: 75, heightMax: 85 },
+                { label: "18-24M", heightMin: 85, heightMax: 92 },
+                { label: "2T", heightMin: 92, heightMax: 98 },
+                { label: "3T", heightMin: 98, heightMax: 104 },
+                { label: "4T", heightMin: 104, heightMax: 110 },
+                { label: "5", heightMin: 110, heightMax: 116 },
+                { label: "6", heightMin: 116, heightMax: 122 },
+                { label: "7", heightMin: 122, heightMax: 128 },
+                { label: "8", heightMin: 128, heightMax: 134 },
+                { label: "10", heightMin: 134, heightMax: 146 },
+                { label: "12", heightMin: 146, heightMax: 158 },
+            ],
+            Zara: [
+                { label: "9-12M", heightMin: 75, heightMax: 82 },
+                { label: "18-24M", heightMin: 82, heightMax: 92 },
+                { label: "2-3Y", heightMin: 92, heightMax: 100 },
+                { label: "3-4Y", heightMin: 100, heightMax: 108 },
+                { label: "4-5Y", heightMin: 108, heightMax: 116 },
+                { label: "6-7Y", heightMin: 116, heightMax: 124 },
+                { label: "8-9Y", heightMin: 124, heightMax: 132 },
+                { label: "10-11Y", heightMin: 132, heightMax: 142 },
+                { label: "12-13Y", heightMin: 142, heightMax: 152 },
+            ],
+            "H&M": [
+                { label: "74-80", heightMin: 74, heightMax: 80 },
+                { label: "86-92", heightMin: 86, heightMax: 92 },
+                { label: "92-98", heightMin: 92, heightMax: 98 },
+                { label: "98-104", heightMin: 98, heightMax: 104 },
+                { label: "104-110", heightMin: 104, heightMax: 110 },
+                { label: "110-116", heightMin: 110, heightMax: 116 },
+                { label: "116-122", heightMin: 116, heightMax: 122 },
+                { label: "122-128", heightMin: 122, heightMax: 128 },
+                { label: "128-134", heightMin: 128, heightMax: 134 },
+                { label: "134-140", heightMin: 134, heightMax: 140 },
+            ],
+            UNIQLO: [
+                { label: "80", heightMin: 75, heightMax: 85 },
+                { label: "90", heightMin: 85, heightMax: 95 },
+                { label: "100", heightMin: 95, heightMax: 105 },
+                { label: "110", heightMin: 105, heightMax: 115 },
+                { label: "120", heightMin: 115, heightMax: 125 },
+                { label: "130", heightMin: 125, heightMax: 135 },
+                { label: "140", heightMin: 135, heightMax: 145 },
+                { label: "150", heightMin: 145, heightMax: 155 },
+            ],
+        };
 
-function predictHeight(currentHeight, ageMonths, monthsAhead) {
-  const g = growthPerYear(ageMonths);
-  return +(currentHeight + (g * monthsAhead) / 12).toFixed(1);
-}
+        const brandColors = {
+            JP: "#6C63FF", GAP: "#1C75BC", Zara: "#1A1A1A", "H&M": "#E50010", UNIQLO: "#E60012",
+        };
 
-function getSize(brand, height) {
-  const sizes = BRAND_SIZES[brand];
-  for (let i = sizes.length - 1; i >= 0; i--) {
-    if (height >= sizes[i].heightMin) return sizes[i].label;
-  }
-  return sizes[0].label;
-}
+        function growthPerYear(ageMonths) {
+            if (ageMonths < 12) return 20;
+            if (ageMonths < 24) return 12;
+            if (ageMonths < 36) return 9;
+            if (ageMonths < 60) return 7;
+            if (ageMonths < 96) return 6;
+            return 5.5;
+        }
 
-const brandColors = {
-  JP: "#6C63FF", GAP: "#1C75BC", Zara: "#1A1A1A", "H&M": "#E50010", UNIQLO: "#E60012",
-};
+        function predictHeight(currentHeight, ageMonths, monthsAhead) {
+            const g = growthPerYear(ageMonths);
+            return +(parseFloat(currentHeight) + (g * monthsAhead) / 12).toFixed(1);
+        }
 
-function getSeason(monthsAhead) {
-  const now = new Date();
-  const future = new Date(now.getFullYear(), now.getMonth() + monthsAhead);
-  const m = future.getMonth();
-  return m >= 3 && m <= 8 ? "春夏" : "秋冬";
-}
+        function getSize(brand, height) {
+            const sizes = BRAND_SIZES[brand];
+            for (let i = sizes.length - 1; i >= 0; i--) {
+                if (height >= sizes[i].heightMin) return sizes[i].label;
+            }
+            return sizes[0].label;
+        }
 
-function getTargetDate(monthsAhead) {
-  const now = new Date();
-  const future = new Date(now.getFullYear(), now.getMonth() + monthsAhead);
-  return `${future.getFullYear()}年${future.getMonth() + 1}月`;
-}
+        function getSeason(monthsAhead) {
+            const now = new Date();
+            const future = new Date(now.getFullYear(), now.getMonth() + monthsAhead);
+            const m = future.getMonth();
+            return m >= 3 && m <= 8 ? "春夏" : "秋冬";
+        }
 
-function SizeCard({ months, height, ageMonths, isNow, currentAgeMonths }) {
-  const season = getSeason(months);
-  const targetDate = getTargetDate(months);
-  const futureAgeY = Math.floor((currentAgeMonths + months) / 12);
-  const futureAgeM = (currentAgeMonths + months) % 12;
+        function getTargetDate(monthsAhead) {
+            const now = new Date();
+            const future = new Date(now.getFullYear(), now.getMonth() + monthsAhead);
+            return `${future.getFullYear()}年${future.getMonth() + 1}月`;
+        }
 
-  return (
-    <div style={{
-      background: isNow ? "linear-gradient(135deg,#6C63FF,#a78bfa)" : "white",
-      color: isNow ? "white" : "#1e1b4b",
-      borderRadius: 20,
-      padding: "20px 24px",
-      boxShadow: isNow ? "0 8px 32px rgba(108,99,255,0.25)" : "0 2px 16px rgba(0,0,0,0.07)",
-      flex: 1,
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.7 }}>
-          {isNow ? "現在" : `${months}ヶ月後`}
-        </div>
-        {!isNow && (
-          <div style={{ fontSize: 11, fontWeight: 600, background: "rgba(108,99,255,0.1)", color: "#6C63FF", borderRadius: 8, padding: "2px 8px" }}>
-            {targetDate}・{season}
-          </div>
-        )}
-      </div>
-      <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-        {isNow ? `今月` : `${futureAgeY}歳${futureAgeM}ヶ月頃`}
-      </div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>
-        {height} <span style={{ fontSize: 14, fontWeight: 500 }}>cm</span>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {Object.keys(BRAND_SIZES).map(brand => (
-          <div key={brand} style={{
-            background: isNow ? "rgba(255,255,255,0.2)" : brandColors[brand] + "18",
-            color: isNow ? "white" : brandColors[brand],
-            borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700,
-          }}>
-            {brand}: {getSize(brand, height)}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+        function SizeCard({ months, height, isNow, currentAgeMonths }) {
+            const season = getSeason(months);
+            const targetDate = getTargetDate(months);
+            const futureAgeY = Math.floor((currentAgeMonths + months) / 12);
+            const futureAgeM = (currentAgeMonths + months) % 12;
 
-const EMPTY = { name: "", gender: "", birthYear: "", birthMonth: "", height: "", weight: "" };
-
-export default function App() {
-  const [children, setChildren] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState(EMPTY);
-  const [adding, setAdding] = useState(false);
-  const [tab, setTab] = useState("predict");
-  const [giftBirth, setGiftBirth] = useState({ year: "", month: "" });
-  const [giftResult, setGiftResult] = useState(null);
-  const [customMonths, setCustomMonths] = useState(6);
-
-  const now = new Date();
-
-  function ageMonths(child) {
-    const birth = new Date(child.birthYear, child.birthMonth - 1);
-    return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  }
-
-  function addChild() {
-    if (!form.name || !form.gender || !form.birthYear || !form.birthMonth || !form.height) return;
-    const c = { ...form, id: Date.now() };
-    const updated = [...children, c];
-    setChildren(updated);
-    setSelected(c.id);
-    setForm(EMPTY);
-    setAdding(false);
-  }
-
-  function calcGift() {
-    if (!giftBirth.year || !giftBirth.month) return;
-    const birth = new Date(giftBirth.year, giftBirth.month - 1);
-    const am = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    let h;
-    if (am < 3) h = 55; else if (am < 6) h = 62; else if (am < 9) h = 68;
-    else if (am < 12) h = 73; else if (am < 18) h = 78; else if (am < 24) h = 85;
-    else h = 85 + Math.floor((am - 24) / 12) * 7 + ((am - 24) % 12) * 0.6;
-    setGiftResult({ am, h: +h.toFixed(1) });
-  }
-
-  const activeChild = children.find(c => c.id === selected);
-
-  const inputStyle = {
-    padding: "10px 14px", borderRadius: 12, border: "1.5px solid #e0e0f0",
-    fontSize: 14, color: "#1e1b4b", outline: "none", width: "100%", boxSizing: "border-box",
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#f5f3ff", fontFamily: "'Helvetica Neue',sans-serif", paddingBottom: 60 }}>
-      {/* Header */}
-      <div style={{ background: "linear-gradient(135deg,#6C63FF,#a78bfa)", padding: "32px 24px 24px", color: "white" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>👗 SizeAhead</div>
-          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>子供の洋服サイズ、先読みアプリ</div>
-          <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-            {[["predict","サイズ予測"],["gift","ギフトモード"]].map(([key, label]) => (
-              <button key={key} onClick={() => setTab(key)} style={{
-                background: tab === key ? "white" : "rgba(255,255,255,0.2)",
-                color: tab === key ? "#6C63FF" : "white",
-                border: "none", borderRadius: 20, padding: "6px 18px",
-                fontSize: 13, fontWeight: 700, cursor: "pointer",
-              }}>{label}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px" }}>
-
-        {/* ===== PREDICT TAB ===== */}
-        {tab === "predict" && (<>
-          {/* Child selector */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-            {children.map(c => (
-              <button key={c.id} onClick={() => setSelected(c.id)} style={{
-                background: selected === c.id ? "#6C63FF" : "white",
-                color: selected === c.id ? "white" : "#6C63FF",
-                border: "2px solid #6C63FF", borderRadius: 20,
-                padding: "6px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer",
-              }}>
-                {c.gender === "girl" ? "👧" : "👦"} {c.name}
-              </button>
-            ))}
-            <button onClick={() => { setAdding(!adding); setForm(EMPTY); }} style={{
-              background: "white", color: "#6C63FF",
-              border: "2px dashed #a78bfa", borderRadius: 20,
-              padding: "6px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer",
-            }}>＋ 追加</button>
-          </div>
-
-          {/* Add/Edit form */}
-          {adding && (
-            <div style={{ background: "white", borderRadius: 20, padding: 20, marginBottom: 20, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
-              <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 14, color: "#1e1b4b" }}>子供を追加</div>
-
-              {/* Gender */}
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 12, color: "#888", fontWeight: 600, marginBottom: 6 }}>性別</div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  {[["boy","👦 男の子"],["girl","👧 女の子"]].map(([val, label]) => (
-                    <button key={val} onClick={() => setForm(f => ({...f, gender: val}))} style={{
-                      flex: 1, padding: "10px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14,
-                      border: `2px solid ${form.gender === val ? "#6C63FF" : "#e0e0f0"}`,
-                      background: form.gender === val ? "#f0efff" : "white",
-                      color: form.gender === val ? "#6C63FF" : "#999",
-                    }}>{label}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <input style={{ ...inputStyle, gridColumn: "1/-1" }} type="text" placeholder="お名前"
-                  value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
-                <input style={inputStyle} type="number" placeholder="生まれ年（例: 2021）"
-                  value={form.birthYear} onChange={e => setForm(f => ({...f, birthYear: e.target.value}))} />
-                <input style={inputStyle} type="number" placeholder="生まれ月（例: 4）"
-                  value={form.birthMonth} onChange={e => setForm(f => ({...f, birthMonth: e.target.value}))} />
-                <input style={inputStyle} type="number" placeholder="身長 (cm)"
-                  value={form.height} onChange={e => setForm(f => ({...f, height: e.target.value}))} />
-                <input style={inputStyle} type="number" placeholder="体重 (kg)"
-                  value={form.weight} onChange={e => setForm(f => ({...f, weight: e.target.value}))} />
-              </div>
-              <button onClick={addChild} style={{
-                marginTop: 14, width: "100%", background: "linear-gradient(135deg,#6C63FF,#a78bfa)",
-                color: "white", border: "none", borderRadius: 14, padding: "12px",
-                fontWeight: 800, fontSize: 15, cursor: "pointer",
-              }}>保存する</button>
-            </div>
-          )}
-
-          {/* Results */}
-          {activeChild && (() => {
-            const am = ageMonths(activeChild);
-            const h0 = +activeChild.height;
-            const hCustom = predictHeight(h0, am, customMonths);
-            const ageY = Math.floor(am / 12);
-            const ageM = am % 12;
-            const thisMonth = `${now.getFullYear()}年${now.getMonth() + 1}月`;
             return (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <div style={{ fontSize: 13, color: "#6C63FF", fontWeight: 700 }}>
-                    {activeChild.gender === "girl" ? "👧" : "👦"} {activeChild.name} · {ageY}歳{ageM}ヶ月
-                  </div>
-                  <button onClick={() => {
-                    setForm({ name: activeChild.name, gender: activeChild.gender, birthYear: activeChild.birthYear, birthMonth: activeChild.birthMonth, height: activeChild.height, weight: activeChild.weight });
-                    setChildren(prev => prev.filter(c => c.id !== activeChild.id));
-                    setSelected(null);
-                    setAdding(true);
-                  }} style={{ fontSize: 12, color: "#888", background: "white", border: "1.5px solid #e0e0f0", borderRadius: 10, padding: "4px 12px", cursor: "pointer", fontWeight: 600 }}>
-                    ✏️ 編集
-                  </button>
-                </div>
-                <div style={{ fontSize: 12, color: "#aaa", marginBottom: 16 }}>
-                  {thisMonth}現在 · 身長 {h0}cm{activeChild.weight ? ` · 体重 ${activeChild.weight}kg` : ""}
-                </div>
-
-                {/* 月数スライダー */}
-                <div style={{ background: "white", borderRadius: 16, padding: "16px 20px", marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1e1b4b" }}>予測する月数</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#6C63FF" }}>{customMonths}ヶ月後</div>
-                  </div>
-                  <input type="range" min={1} max={24} value={customMonths}
-                    onChange={e => setCustomMonths(+e.target.value)}
-                    style={{ width: "100%", accentColor: "#6C63FF" }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#aaa", marginTop: 4 }}>
-                    <span>1ヶ月後</span><span>24ヶ月後</span>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 12, flexDirection: "column" }}>
-                  <SizeCard months={0} height={h0} ageMonths={am} isNow={true} currentAgeMonths={am} />
-                  <SizeCard months={customMonths} height={hCustom} ageMonths={am + customMonths} currentAgeMonths={am} />
-                </div>
-
-                {/* Advice */}
-                <div style={{ marginTop: 16, background: "white", borderRadius: 20, padding: 20, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
-                  <div style={{ fontWeight: 800, color: "#1e1b4b", marginBottom: 10 }}>💡 お買い物アドバイス</div>
-                  <div style={{ fontSize: 13, color: "#555", lineHeight: 2 }}>
-                    <div>🛍️ <b>{customMonths}ヶ月後（{getSeason(customMonths)}）</b>：JP <b>{getSize("JP", hCustom)}</b> を目安に</div>
-                    <div>🎁 <b>ギフト目安</b>：余裕を持って JP <b>{getSize("JP", predictHeight(h0, am, customMonths + 3))}</b> がおすすめ</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {!activeChild && !adding && (
-            <div style={{ textAlign: "center", color: "#aaa", marginTop: 60 }}>
-              <div style={{ fontSize: 48 }}>👶</div>
-              <div style={{ marginTop: 12, fontWeight: 700 }}>「＋ 追加」からお子様を登録してください</div>
-            </div>
-          )}
-        </>)}
-
-        {/* ===== GIFT TAB ===== */}
-        {tab === "gift" && (
-          <div>
-            <div style={{ background: "white", borderRadius: 20, padding: 24, boxShadow: "0 2px 16px rgba(0,0,0,0.07)", marginBottom: 20 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: "#1e1b4b", marginBottom: 6 }}>🎁 ギフトモード</div>
-              <div style={{ fontSize: 13, color: "#888", marginBottom: 18 }}>生年月日だけで適正サイズを表示します</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                <input style={inputStyle} type="number" placeholder="生まれ年（例: 2021）"
-                  value={giftBirth.year} onChange={e => setGiftBirth(g => ({...g, year: e.target.value}))} />
-                <input style={inputStyle} type="number" placeholder="生まれ月（例: 4）"
-                  value={giftBirth.month} onChange={e => setGiftBirth(g => ({...g, month: e.target.value}))} />
-              </div>
-              <button onClick={calcGift} style={{
-                width: "100%", background: "linear-gradient(135deg,#6C63FF,#a78bfa)",
-                color: "white", border: "none", borderRadius: 14, padding: "12px",
-                fontWeight: 800, fontSize: 15, cursor: "pointer",
-              }}>サイズを調べる</button>
-            </div>
-
-            {giftResult && (() => {
-              const { am, h } = giftResult;
-              const ageY = Math.floor(am / 12);
-              const ageM = am % 12;
-              return (
-                <div>
-                  <div style={{ fontSize: 13, color: "#6C63FF", fontWeight: 700, marginBottom: 4 }}>
-                    {ageY}歳{ageM}ヶ月のお子様
-                  </div>
-                  <div style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>推定身長 {h}cm</div>
-                  <div style={{ display: "flex", gap: 12, flexDirection: "column" }}>
-                    <SizeCard months={0} height={h} ageMonths={am} isNow={true} currentAgeMonths={am} />
-                    <SizeCard months={6} height={predictHeight(h, am, 6)} ageMonths={am + 6} currentAgeMonths={am} />
-                  </div>
-                  <div style={{ marginTop: 16, background: "white", borderRadius: 20, padding: 20, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
-                    <div style={{ fontWeight: 800, color: "#1e1b4b", marginBottom: 8 }}>🎁 ギフト選びのポイント</div>
-                    <div style={{ fontSize: 13, color: "#555", lineHeight: 2 }}>
-                      <div>✅ <b>ぴったり今</b>：JP <b>{getSize("JP", h)}</b></div>
-                      <div>✅ <b>長く着てほしい</b>：JP <b>{getSize("JP", predictHeight(h, am, 6))}</b>（半年後サイズ）がおすすめ</div>
+                <div className={`p-6 rounded-3xl transition-all ${isNow ? 'bg-gradient-to-br from-[#6C63FF] to-[#a78bfa] text-white shadow-xl' : 'bg-white text-indigo-950 shadow-md border border-indigo-50'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                        <div className={`text-xs font-bold uppercase tracking-wider ${isNow ? 'opacity-80' : 'text-indigo-400'}`}>
+                            {isNow ? "現在" : `${months}ヶ月後`}
+                        </div>
+                        {!isNow && (
+                            <div className="text-[10px] font-bold bg-indigo-50 text-indigo-600 rounded-full px-3 py-1 border border-indigo-100">
+                                {targetDate}・{season}
+                            </div>
+                        )}
                     </div>
-                  </div>
+                    <div className={`text-sm mb-2 ${isNow ? 'opacity-70' : 'text-indigo-400'}`}>
+                        {isNow ? `今月` : `${futureAgeY}歳${futureAgeM}ヶ月頃`}
+                    </div>
+                    <div className="text-4xl font-extrabold mb-4">
+                        {height} <span className="text-lg font-medium">cm</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.keys(BRAND_SIZES).map(brand => (
+                            <div key={brand} className={`brand-badge text-[11px] font-bold rounded-lg px-2.5 py-1.5 ${isNow ? 'bg-white/20 text-white' : ''}`}
+                                 style={{ 
+                                     background: isNow ? 'rgba(255,255,255,0.2)' : brandColors[brand] + '15',
+                                     color: isNow ? 'white' : brandColors[brand],
+                                     border: isNow ? 'none' : `1px solid ${brandColors[brand]}30`
+                                 }}>
+                                {brand}: {getSize(brand, height)}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-              );
-            })()}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+            );
+        }
+
+        const EMPTY = { name: "", gender: "", birthYear: "", birthMonth: "", height: "", weight: "" };
+
+        function App() {
+            const [children, setChildren] = useState([]);
+            const [selected, setSelected] = useState(null);
+            const [form, setForm] = useState(EMPTY);
+            const [adding, setAdding] = useState(false);
+            const [tab, setTab] = useState("predict");
+            const [giftBirth, setGiftBirth] = useState({ year: "", month: "" });
+            const [giftResult, setGiftResult] = useState(null);
+            const [customMonths, setCustomMonths] = useState(6);
+
+            const now = new Date();
+
+            function ageMonths(child) {
+                const birth = new Date(child.birthYear, child.birthMonth - 1);
+                return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+            }
+
+            function addChild() {
+                if (!form.name || !form.gender || !form.birthYear || !form.birthMonth || !form.height) return;
+                const c = { ...form, id: Date.now() };
+                const updated = [...children, c];
+                setChildren(updated);
+                setSelected(c.id);
+                setForm(EMPTY);
+                setAdding(false);
+            }
+
+            function calcGift() {
+                if (!giftBirth.year || !giftBirth.month) return;
+                const birth = new Date(giftBirth.year, giftBirth.month - 1);
+                const am = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+                let h;
+                if (am < 3) h = 55; else if (am < 6) h = 62; else if (am < 9) h = 68;
+                else if (am < 12) h = 73; else if (am < 18) h = 78; else if (am < 24) h = 85;
+                else h = 85 + Math.floor((am - 24) / 12) * 7 + ((am - 24) % 12) * 0.6;
+                setGiftResult({ am, h: +h.toFixed(1) });
+            }
+
+            const activeChild = children.find(c => c.id === selected);
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Header */}
+                    <div className="bg-gradient-to-br from-[#6C63FF] to-[#a78bfa] pt-12 pb-8 px-6 text-white sticky top-0 z-50 shadow-lg">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="flex items-center gap-2">
+                                <span className="text-3xl">👗</span>
+                                <h1 className="text-2xl font-black tracking-tight">SizeAhead</h1>
+                            </div>
+                            <p className="text-sm opacity-80 mt-1">子供の成長を予測して賢くお買い物</p>
+                            
+                            <div className="flex gap-2 mt-6">
+                                {[["predict","サイズ予測"],["gift","ギフトモード"]].map(([key, label]) => (
+                                    <button 
+                                        key={key} 
+                                        onClick={() => setTab(key)} 
+                                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-2xl text-sm font-bold transition-all ${tab === key ? "bg-white text-indigo-600 shadow-md" : "bg-white/20 text-white hover:bg-white/30"}`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-2xl mx-auto p-4 sm:p-6">
+
+                        {/* ===== PREDICT TAB ===== */}
+                        {tab === "predict" && (
+                            <div className="space-y-6">
+                                {/* Child Selector */}
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                    {children.map(c => (
+                                        <button 
+                                            key={c.id} 
+                                            onClick={() => {setSelected(c.id); setAdding(false);}}
+                                            className={`whitespace-nowrap px-5 py-2.5 rounded-2xl font-bold text-sm transition-all border-2 ${selected === c.id ? "bg-indigo-600 text-white border-indigo-600 shadow-md" : "bg-white text-indigo-600 border-indigo-100 hover:border-indigo-300"}`}
+                                        >
+                                            {c.gender === "girl" ? "👧" : "👦"} {c.name}
+                                        </button>
+                                    ))}
+                                    <button 
+                                        onClick={() => { setAdding(true); setSelected(null); setForm(EMPTY); }} 
+                                        className="whitespace-nowrap px-5 py-2.5 rounded-2xl font-bold text-sm bg-white text-indigo-400 border-2 border-dashed border-indigo-200 hover:bg-indigo-50"
+                                    >
+                                        ＋ お子様を追加
+                                    </button>
+                                </div>
+
+                                {/* Form */}
+                                {adding && (
+                                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-indigo-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <h2 className="text-lg font-bold text-indigo-950 mb-6">お子様の情報を入力</h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-indigo-300 mb-2 block uppercase tracking-wider">性別</label>
+                                                <div className="flex gap-3">
+                                                    {[["boy","👦 男の子"],["girl","👧 女の子"]].map(([val, label]) => (
+                                                        <button 
+                                                            key={val} 
+                                                            onClick={() => setForm(f => ({...f, gender: val}))} 
+                                                            className={`flex-1 py-3 rounded-2xl font-bold transition-all border-2 ${form.gender === val ? "bg-indigo-50 border-indigo-600 text-indigo-600" : "bg-white border-gray-100 text-gray-400"}`}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="col-span-2">
+                                                    <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none text-indigo-900 placeholder-gray-300" type="text" placeholder="お名前"
+                                                        value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+                                                </div>
+                                                <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none text-indigo-900 placeholder-gray-300" type="number" placeholder="誕生年 (2021)"
+                                                    value={form.birthYear} onChange={e => setForm(f => ({...f, birthYear: e.target.value}))} />
+                                                <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none text-indigo-900 placeholder-gray-300" type="number" placeholder="誕生月 (4)"
+                                                    value={form.birthMonth} onChange={e => setForm(f => ({...f, birthMonth: e.target.value}))} />
+                                                <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none text-indigo-900 placeholder-gray-300" type="number" step="0.1" placeholder="身長 (cm)"
+                                                    value={form.height} onChange={e => setForm(f => ({...f, height: e.target.value}))} />
+                                                <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none text-indigo-900 placeholder-gray-300" type="number" step="0.1" placeholder="体重 (kg)"
+                                                    value={form.weight} onChange={e => setForm(f => ({...f, weight: e.target.value}))} />
+                                            </div>
+                                            <button 
+                                                onClick={addChild} 
+                                                className="w-full bg-gradient-to-r from-[#6C63FF] to-[#a78bfa] text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all"
+                                            >
+                                                保存して予測を開始
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Predictions */}
+                                {activeChild && (
+                                    <div className="space-y-4 animate-in fade-in duration-500">
+                                        <div className="flex items-center justify-between px-2">
+                                            <div>
+                                                <h3 className="text-indigo-600 font-bold flex items-center gap-1">
+                                                    {activeChild.gender === "girl" ? "👧" : "👦"} {activeChild.name} 
+                                                    <span className="text-xs bg-indigo-100 px-2 py-0.5 rounded-full ml-1">
+                                                        {Math.floor(ageMonths(activeChild)/12)}歳{ageMonths(activeChild)%12}ヶ月
+                                                    </span>
+                                                </h3>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-tighter mt-0.5">
+                                                    現在: {activeChild.height}cm {activeChild.weight && `/ ${activeChild.weight}kg`}
+                                                </p>
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    setForm(activeChild);
+                                                    setChildren(prev => prev.filter(c => c.id !== activeChild.id));
+                                                    setSelected(null);
+                                                    setAdding(true);
+                                                }}
+                                                className="text-xs font-bold text-gray-400 hover:text-indigo-600 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm"
+                                            >
+                                                ✏️ 修正
+                                            </button>
+                                        </div>
+
+                                        {/* Slider Card */}
+                                        <div className="bg-white rounded-3xl p-6 shadow-md border border-indigo-50">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <span className="text-sm font-bold text-indigo-950">予測する未来</span>
+                                                <span className="text-xl font-black text-indigo-600">{customMonths}<span className="text-xs ml-1">ヶ月後</span></span>
+                                            </div>
+                                            <input 
+                                                type="range" min="1" max="24" value={customMonths}
+                                                onChange={e => setCustomMonths(+e.target.value)}
+                                                className="w-full h-2 bg-indigo-50 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                            />
+                                            <div className="flex justify-between text-[10px] font-bold text-gray-300 mt-2 uppercase">
+                                                <span>直近</span><span>2年後</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Result Cards */}
+                                        <div className="grid gap-4">
+                                            <SizeCard months={0} height={parseFloat(activeChild.height)} isNow={true} currentAgeMonths={ageMonths(activeChild)} />
+                                            <SizeCard months={customMonths} height={predictHeight(activeChild.height, ageMonths(activeChild), customMonths)} isNow={false} currentAgeMonths={ageMonths(activeChild)} />
+                                        </div>
+
+                                        {/* Advisor */}
+                                        <div className="bg-indigo-950 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl">🛍️</div>
+                                            <h4 className="font-bold text-indigo-200 mb-3 flex items-center gap-2">
+                                                <span>💡</span> お買い物アドバイス
+                                            </h4>
+                                            <ul className="space-y-3 text-sm leading-relaxed">
+                                                <li className="flex gap-2">
+                                                    <span className="text-indigo-400">●</span>
+                                                    <span><b>{customMonths}ヶ月後の{getSeason(customMonths)}物</b>は、<b>JP {getSize("JP", predictHeight(activeChild.height, ageMonths(activeChild), customMonths))}</b>がジャストサイズになりそうです。</span>
+                                                </li>
+                                                <li className="flex gap-2">
+                                                    <span className="text-indigo-400">●</span>
+                                                    <span>来年も着せたいアウター等は、さらにワンサイズ上の <b>{getSize("JP", predictHeight(activeChild.height, ageMonths(activeChild), customMonths + 12))}</b> も検討しましょう。</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!activeChild && !adding && (
+                                    <div className="text-center py-20 px-10">
+                                        <div className="text-6xl mb-4">🧸</div>
+                                        <h3 className="text-indigo-950 font-bold mb-2">まだ登録されていません</h3>
+                                        <p className="text-sm text-gray-400 mb-6">お子様の情報を登録して、未来のサイズをチェックしましょう。</p>
+                                        <button 
+                                            onClick={() => setAdding(true)}
+                                            className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-100"
+                                        >
+                                            お子様を登録する
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ===== GIFT TAB ===== */}
+                        {tab === "gift" && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="bg-white rounded-3xl p-8 shadow-xl border border-indigo-50 text-center">
+                                    <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🎁</div>
+                                    <h2 className="text-xl font-black text-indigo-950 mb-2">ギフトモード</h2>
+                                    <p className="text-sm text-gray-400 mb-8">お相手の身長がわからなくても、<br/>平均成長曲線から予測します。</p>
+                                    
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="text-left">
+                                            <label className="text-[10px] font-bold text-indigo-300 ml-2 mb-1 block uppercase">誕生年</label>
+                                            <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none" type="number" placeholder="2022"
+                                                value={giftBirth.year} onChange={e => setGiftBirth(g => ({...g, year: e.target.value}))} />
+                                        </div>
+                                        <div className="text-left">
+                                            <label className="text-[10px] font-bold text-indigo-300 ml-2 mb-1 block uppercase">誕生月</label>
+                                            <input className="w-full px-4 py-3 rounded-2xl border-2 border-gray-100 focus:border-indigo-400 outline-none" type="number" placeholder="10"
+                                                value={giftBirth.month} onChange={e => setGiftBirth(g => ({...g, month: e.target.value}))} />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={calcGift} 
+                                        className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                                    >
+                                        サイズを計算する
+                                    </button>
+                                </div>
+
+                                {giftResult && (
+                                    <div className="space-y-4 animate-in zoom-in-95 duration-300">
+                                        <div className="text-center">
+                                            <h3 className="text-indigo-950 font-black text-lg">
+                                                {Math.floor(giftResult.am / 12)}歳{giftResult.am % 12}ヶ月頃の平均サイズ
+                                            </h3>
+                                            <p className="text-xs text-gray-400 mt-1">※個人差があるため目安としてご覧ください</p>
+                                        </div>
+                                        
+                                        <div className="grid gap-4">
+                                            <SizeCard months={0} height={giftResult.h} isNow={true} currentAgeMonths={giftResult.am} />
+                                            <SizeCard months={6} height={predictHeight(giftResult.h, giftResult.am, 6)} isNow={false} currentAgeMonths={giftResult.am} />
+                                        </div>
+
+                                        <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-indigo-100">
+                                            <h4 className="font-bold text-indigo-950 mb-3 text-sm">✨ 失敗しないギフトのコツ</h4>
+                                            <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+                                                <div className="flex gap-2">
+                                                    <span className="font-bold text-indigo-600">✓</span>
+                                                    <span>半年後のサイズ <b>JP {getSize("JP", predictHeight(giftResult.h, giftResult.am, 6))}</b> を選ぶと、長く愛用してもらえます。</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <span className="font-bold text-indigo-600">✓</span>
+                                                    <span>海外ブランド（Zara等）は細身な作りが多いため、迷ったら一つ上のサイズが安全です。</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
